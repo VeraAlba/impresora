@@ -2,146 +2,33 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Servidor de Impresión</title>
+<title>Test QZ</title>
 
 <script src="https://cdn.jsdelivr.net/npm/qz-tray/qz-tray.js"></script>
 
 </head>
 <body>
 
-<h2>🖨 Servidor de impresión activo</h2>
-<p>Esperando pedidos...</p>
+<h1>Test conexión QZ</h1>
 
-<script type="module">
+<script>
 
-console.log("🚀 SCRIPT CARGADO");
+console.log("SCRIPT CARGADO");
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+qz.websocket.connect().then(function() {
 
-/* FIREBASE */
+  console.log("QZ conectado");
 
-const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "app-vera-alba.firebaseapp.com",
-  databaseURL: "https://app-vera-alba-default-rtdb.firebaseio.com/",
-  projectId: "app-vera-alba",
-  storageBucket: "app-vera-alba.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
-};
+  return qz.printers.find();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+}).then(function(printers){
 
-/* CONECTAR QZ */
+  console.log("Impresoras encontradas:");
+  console.log(printers);
 
-async function conectarQZ(){
+}).catch(function(err){
 
-  try{
-
-    if(!qz.websocket.isActive()){
-      await qz.websocket.connect();
-      console.log("✅ QZ conectado correctamente");
-    }
-
-    const printers = await qz.printers.find();
-    console.log("🖨 IMPRESORAS DISPONIBLES:");
-    console.log(printers);
-
-  }catch(err){
-
-    console.error("❌ Error conectando QZ:", err);
-
-  }
-
-}
-
-/* IMPRIMIR TICKET */
-
-async function imprimirTicket(pedido){
-
-  await conectarQZ();
-
-  const printerName = "POS-58"; 
-
-  console.log("🖨 Usando impresora:", printerName);
-
-  const config = qz.configs.create(printerName);
-
-  let ticket = `
-VERA ALBA
---------------------------
-Cliente: ${pedido.cliente}
-
-`;
-
-  pedido.productos.forEach(p => {
-    ticket += `${p.cantidad} x ${p.nombre}\n`;
-  });
-
-  ticket += `
---------------------------
-TOTAL: $${pedido.totalPedido}
-
-Gracias por su compra
-
-
-`;
-
-  const data = [{
-    type: 'raw',
-    format: 'plain',
-    data: ticket
-  }];
-
-  try{
-
-    await qz.print(config, data);
-
-    console.log("✅ Ticket enviado a imprimir");
-
-  }catch(err){
-
-    console.error("❌ Error al imprimir:", err);
-
-  }
-
-}
-
-/* CUANDO CARGA LA PAGINA */
-
-window.addEventListener("load", async () => {
-
-  console.log("📡 Iniciando conexión con QZ");
-
-  await conectarQZ();
-
-});
-
-/* ESCUCHAR PEDIDOS */
-
-const pedidosRef = ref(db, "pedidosActuales");
-
-onValue(pedidosRef, snapshot => {
-
-  snapshot.forEach(pedidoSnap => {
-
-    const pedido = pedidoSnap.val();
-
-    if(pedido.imprimir === true){
-
-      console.log("🧾 Pedido recibido para imprimir:", pedido);
-
-      imprimirTicket(pedido);
-
-      update(pedidoSnap.ref,{
-        imprimir:false
-      });
-
-    }
-
-  });
+  console.error("Error:", err);
 
 });
 
