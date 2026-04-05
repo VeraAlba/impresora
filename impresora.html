@@ -14,12 +14,13 @@
 
 <script type="module">
 
-  console.log("SCRIPT CARGADO");
-  
+console.log("🚀 SCRIPT CARGADO");
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 /* FIREBASE */
+
 const firebaseConfig = {
   apiKey: "...",
   authDomain: "app-vera-alba.firebaseapp.com",
@@ -44,9 +45,9 @@ async function conectarQZ(){
       console.log("✅ QZ conectado correctamente");
     }
 
-    /* MOSTRAR IMPRESORAS */
     const printers = await qz.printers.find();
-    console.log("🖨 Impresoras detectadas:", printers);
+    console.log("🖨 IMPRESORAS DISPONIBLES:");
+    console.log(printers);
 
   }catch(err){
 
@@ -56,14 +57,15 @@ async function conectarQZ(){
 
 }
 
-/* IMPRIMIR */
+/* IMPRIMIR TICKET */
 
 async function imprimirTicket(pedido){
 
   await conectarQZ();
 
-  const printerName = "POS-58"; // cambiar luego si hace falta
-  console.log("Usando impresora:", printerName);
+  const printerName = "POS-58"; 
+
+  console.log("🖨 Usando impresora:", printerName);
 
   const config = qz.configs.create(printerName);
 
@@ -96,6 +98,7 @@ Gracias por su compra
   try{
 
     await qz.print(config, data);
+
     console.log("✅ Ticket enviado a imprimir");
 
   }catch(err){
@@ -106,9 +109,15 @@ Gracias por su compra
 
 }
 
-/* INICIAR CONEXION QZ AL CARGAR */
+/* CUANDO CARGA LA PAGINA */
 
-conectarQZ();
+window.addEventListener("load", async () => {
+
+  console.log("📡 Iniciando conexión con QZ");
+
+  await conectarQZ();
+
+});
 
 /* ESCUCHAR PEDIDOS */
 
@@ -122,7 +131,7 @@ onValue(pedidosRef, snapshot => {
 
     if(pedido.imprimir === true){
 
-      console.log("🧾 Imprimiendo pedido", pedido);
+      console.log("🧾 Pedido recibido para imprimir:", pedido);
 
       imprimirTicket(pedido);
 
