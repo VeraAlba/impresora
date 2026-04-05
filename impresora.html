@@ -17,37 +17,58 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* TU CONFIG FIREBASE */
-    const firebaseConfig = {
-      apiKey: "...",
-      authDomain: "app-vera-alba.firebaseapp.com",
-      databaseURL: "https://app-vera-alba-default-rtdb.firebaseio.com/",
-      projectId: "app-vera-alba",
-      storageBucket: "app-vera-alba.appspot.com",
-      messagingSenderId: "...",
-      appId: "..."
-    };
+/* FIREBASE */
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "app-vera-alba.firebaseapp.com",
+  databaseURL: "https://app-vera-alba-default-rtdb.firebaseio.com/",
+  projectId: "app-vera-alba",
+  storageBucket: "app-vera-alba.appspot.com",
+  messagingSenderId: "...",
+  appId: "..."
+};
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+/* CONECTAR QZ */
+
 async function conectarQZ(){
-  if(!qz.websocket.isActive()){
-    await qz.websocket.connect();
-    console.log("QZ conectado");
+
+  try{
+
+    if(!qz.websocket.isActive()){
+      await qz.websocket.connect();
+      console.log("✅ QZ conectado correctamente");
+    }
+
+    /* MOSTRAR IMPRESORAS */
+    const printers = await qz.printers.find();
+    console.log("🖨 Impresoras detectadas:", printers);
+
+  }catch(err){
+
+    console.error("❌ Error conectando QZ:", err);
+
   }
+
 }
+
+/* IMPRIMIR */
 
 async function imprimirTicket(pedido){
 
   await conectarQZ();
 
-  const config = qz.configs.create("POS-58"); // cambiar si tu impresora tiene otro nombre
+  const printerName = "POS-58"; // cambiar luego si hace falta
+  console.log("Usando impresora:", printerName);
+
+  const config = qz.configs.create(printerName);
 
   let ticket = `
-VERA PIZZA
+VERA ALBA
 --------------------------
-Pedido: ${pedido.cliente}
+Cliente: ${pedido.cliente}
 
 `;
 
@@ -70,9 +91,22 @@ Gracias por su compra
     data: ticket
   }];
 
-  qz.print(config, data);
+  try{
+
+    await qz.print(config, data);
+    console.log("✅ Ticket enviado a imprimir");
+
+  }catch(err){
+
+    console.error("❌ Error al imprimir:", err);
+
+  }
 
 }
+
+/* INICIAR CONEXION QZ AL CARGAR */
+
+conectarQZ();
 
 /* ESCUCHAR PEDIDOS */
 
@@ -86,7 +120,7 @@ onValue(pedidosRef, snapshot => {
 
     if(pedido.imprimir === true){
 
-      console.log("Imprimiendo pedido");
+      console.log("🧾 Imprimiendo pedido", pedido);
 
       imprimirTicket(pedido);
 
