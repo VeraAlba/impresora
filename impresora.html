@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Servidor de Impresión</title>
+
+<script src="https://cdn.jsdelivr.net/npm/qz-tray/qz-tray.js"></script>
+
+</head>
+<body>
+
+<h2>🖨 Servidor de impresión activo</h2>
+<p>Esperando pedidos...</p>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* TU CONFIG FIREBASE */
+    const firebaseConfig = {
+      apiKey: "...",
+      authDomain: "app-vera-alba.firebaseapp.com",
+      databaseURL: "https://app-vera-alba-default-rtdb.firebaseio.com/",
+      projectId: "app-vera-alba",
+      storageBucket: "app-vera-alba.appspot.com",
+      messagingSenderId: "...",
+      appId: "..."
+    };
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+async function conectarQZ(){
+  if(!qz.websocket.isActive()){
+    await qz.websocket.connect();
+    console.log("QZ conectado");
+  }
+}
+
+async function imprimirTicket(pedido){
+
+  await conectarQZ();
+
+  const config = qz.configs.create("POS-58"); // cambiar si tu impresora tiene otro nombre
+
+  let ticket = `
+VERA PIZZA
+--------------------------
+Pedido: ${pedido.cliente}
+
+`;
+
+  pedido.productos.forEach(p => {
+    ticket += `${p.cantidad} x ${p.nombre}\n`;
+  });
+
+  ticket += `
+--------------------------
+TOTAL: $${pedido.totalPedido}
+
+Gracias por su compra
+
+
+`;
+
+  const data = [{
+    type: 'raw',
+    format: 'plain',
+    data: ticket
+  }];
+
+  qz.print(config, data);
+
+}
+
+/* ESCUCHAR PEDIDOS */
+
+const pedidosRef = ref(db, "pedidosActuales");
+
+onValue(pedidosRef, snapshot => {
+
+  snapshot.forEach(pedidoSnap => {
+
+    const pedido = pedidoSnap.val();
+
+    if(pedido.imprimir === true){
+
+      console.log("Imprimiendo pedido");
+
+      imprimirTicket(pedido);
+
+      update(pedidoSnap.ref,{
+        imprimir:false
+      });
+
+    }
+
+  });
+
+});
+
+</script>
+
+</body>
+</html>
